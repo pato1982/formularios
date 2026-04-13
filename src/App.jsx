@@ -695,19 +695,19 @@ function FormOnePage({ formulario, onBack, draftId, initialData, showMissingOnMo
 
 function Selector({ onSelect, onResumeDraft }) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [menuSection, setMenuSection] = useState('home')
+  const [view, setView] = useState('selector')
   const [listVersion, setListVersion] = useState(0)
   const [confirmCancel, setConfirmCancel] = useState(null)
 
   useEffect(() => { seedExamples(FORMULARIOS) }, [])
 
-  const drafts = useMemo(() => getDrafts(), [menuOpen, listVersion])
-  const submittedList = useMemo(() => getSubmitted(), [menuOpen, listVersion])
-  const cancelledList = useMemo(() => getCancelled(), [menuOpen, listVersion])
+  const drafts = useMemo(() => getDrafts(), [view, menuOpen, listVersion])
+  const submittedList = useMemo(() => getSubmitted(), [view, menuOpen, listVersion])
+  const cancelledList = useMemo(() => getCancelled(), [view, menuOpen, listVersion])
 
-  const openSection = (s) => setMenuSection(s)
-  const backToHome = () => setMenuSection('home')
-  const closeMenu = () => { setMenuOpen(false); setMenuSection('home') }
+  const openSection = (s) => { setView(s); setMenuOpen(false) }
+  const backToSelector = () => setView('selector')
+  const closeMenu = () => setMenuOpen(false)
 
   const handleResume = (draft) => {
     const f = FORMULARIOS.find((x) => x.id === draft.formId)
@@ -738,6 +738,20 @@ function Selector({ onSelect, onResumeDraft }) {
           <div className="brand-mark">●</div>
           <span>Centro de formularios</span>
         </div>
+        {view !== 'selector' && (
+          <div className="topbar-title">
+            <h1>
+              {view === 'pendientes' && 'Formularios pendientes'}
+              {view === 'enviados' && 'Formularios enviados'}
+              {view === 'cancelados' && 'Formularios cancelados'}
+            </h1>
+            <p>
+              {view === 'pendientes' && 'Continúe un trámite iniciado previamente'}
+              {view === 'enviados' && 'Historial de registros remitidos'}
+              {view === 'cancelados' && 'Solicitudes descartadas'}
+            </p>
+          </div>
+        )}
         <button type="button" className="menu-toggle" aria-label="Abrir menú" onClick={() => setMenuOpen(true)}>
           <span className="menu-toggle-text">Menu</span>
           <span className="menu-toggle-icon" aria-hidden="true">
@@ -750,157 +764,256 @@ function Selector({ onSelect, onResumeDraft }) {
         <div className="modal-backdrop" onClick={closeMenu}>
           <div className="modal menu-modal" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="menu-modal-close" aria-label="Cerrar" onClick={closeMenu}>×</button>
-
-            {menuSection === 'home' && (
-              <>
-                <div className="menu-modal-header">
-                  <span className="menu-modal-eyebrow">Panel de control</span>
-                  <h2>Gestión de formularios</h2>
-                  <p className="menu-modal-sub">Seleccione una categoría para continuar</p>
-                </div>
-                <ul className="menu-modal-list">
-                  <li>
-                    <button type="button" onClick={() => openSection('pendientes')}>
-                      <span className="menu-item-title">Formularios pendientes</span>
-                      <span className="menu-item-desc">{drafts.length} en curso por completar</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button type="button" onClick={() => openSection('enviados')}>
-                      <span className="menu-item-title">Formularios enviados</span>
-                      <span className="menu-item-desc">{submittedList.length} registros remitidos</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button type="button" onClick={() => openSection('cancelados')}>
-                      <span className="menu-item-title">Formularios cancelados</span>
-                      <span className="menu-item-desc">{cancelledList.length} solicitudes anuladas</span>
-                    </button>
-                  </li>
-                </ul>
-              </>
-            )}
-
-            {menuSection === 'pendientes' && (
-              <>
-                <div className="menu-modal-header with-back">
-                  <button type="button" className="menu-back" onClick={backToHome} aria-label="Volver">←</button>
-                  <div>
-                    <span className="menu-modal-eyebrow">Pendientes</span>
-                    <h2>Formularios pendientes</h2>
-                    <p className="menu-modal-sub">Continúe un trámite iniciado previamente</p>
-                  </div>
-                </div>
-                {drafts.length === 0 ? (
-                  <div className="menu-empty">No hay formularios pendientes.</div>
-                ) : (
-                  <ul className="draft-list">
-                    {drafts.map((d) => (
-                      <li key={d.id}>
-                        <button type="button" className="draft-item" onClick={() => handleResume(d)}>
-                          <div className="draft-item-main">
-                            <span className="draft-item-title">Formulario de contratación</span>
-                            <span className="draft-item-date">{formatAbsolute(d.createdAt)}</span>
-                          </div>
-                          <span className="draft-item-cta">Reanudar →</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="draft-item-cancel"
-                          onClick={(e) => { e.stopPropagation(); requestCancel(d) }}
-                          aria-label="Eliminar borrador"
-                        >×</button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-
-            {menuSection === 'enviados' && (
-              <>
-                <div className="menu-modal-header with-back">
-                  <button type="button" className="menu-back" onClick={backToHome} aria-label="Volver">←</button>
-                  <div>
-                    <span className="menu-modal-eyebrow">Enviados</span>
-                    <h2>Formularios enviados</h2>
-                    <p className="menu-modal-sub">Historial de registros remitidos</p>
-                  </div>
-                </div>
-                {submittedList.length === 0 ? (
-                  <div className="menu-empty">Aún no hay formularios enviados.</div>
-                ) : (
-                  <ul className="draft-list">
-                    {submittedList.map((d) => (
-                      <li key={d.id}>
-                        <button type="button" className="draft-item" onClick={() => handleViewSubmitted(d)}>
-                          <div className="draft-item-main">
-                            <span className="draft-item-title">Formulario de contratación</span>
-                            <span className="draft-item-date">{formatAbsolute(d.submittedAt)}</span>
-                          </div>
-                          <span className="draft-badge ok">Completado</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-
-            {menuSection === 'cancelados' && (
-              <>
-                <div className="menu-modal-header with-back">
-                  <button type="button" className="menu-back" onClick={backToHome} aria-label="Volver">←</button>
-                  <div>
-                    <span className="menu-modal-eyebrow">Cancelados</span>
-                    <h2>Formularios cancelados</h2>
-                    <p className="menu-modal-sub">Solicitudes descartadas</p>
-                  </div>
-                </div>
-                {cancelledList.length === 0 ? (
-                  <div className="menu-empty">No hay formularios cancelados.</div>
-                ) : (
-                  <ul className="draft-list">
-                    {cancelledList.map((d) => (
-                      <li key={d.id}>
-                        <div className="draft-item as-readonly">
-                          <div className="draft-item-main">
-                            <span className="draft-item-title">Formulario de contratación</span>
-                            <span className="draft-item-date">{formatAbsolute(d.cancelledAt)}</span>
-                          </div>
-                          <span className="draft-badge cancelled">Anulado</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
+            <div className="menu-modal-header">
+              <span className="menu-modal-eyebrow">Panel de control</span>
+              <h2>Gestión de formularios</h2>
+              <p className="menu-modal-sub">Seleccione una categoría para continuar</p>
+            </div>
+            <ul className="menu-modal-list">
+              <li>
+                <button type="button" onClick={() => openSection('pendientes')}>
+                  <span className="menu-item-title">Formularios pendientes</span>
+                  <span className="menu-item-desc">{drafts.length} en curso por completar</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => openSection('enviados')}>
+                  <span className="menu-item-title">Formularios enviados</span>
+                  <span className="menu-item-desc">{submittedList.length} registros remitidos</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => openSection('cancelados')}>
+                  <span className="menu-item-title">Formularios cancelados</span>
+                  <span className="menu-item-desc">{cancelledList.length} solicitudes anuladas</span>
+                </button>
+              </li>
+            </ul>
           </div>
         </div>
       )}
 
-      <main className="card selector">
-        <div className="selector-header">
-          <h1>¿Qué formulario necesitas?</h1>
-          <p>Selecciona el formulario que corresponda a tu trámite.</p>
-        </div>
+      {view === 'selector' && (
+        <main className="card selector">
+          <div className="selector-header">
+            <h1>¿Qué formulario necesitas?</h1>
+            <p>Selecciona el formulario que corresponda a tu trámite.</p>
+          </div>
 
-        <div className="selector-grid">
-          {FORMULARIOS.map((f) => (
-            <button key={f.id} className="form-card" onClick={() => onSelect(f)}>
-              <div className="form-card-icon">{f.icono}</div>
-              <h3>{f.nombre}</h3>
-              <p>{f.descripcion}</p>
-              <div className="form-card-meta">
-                <span>📋 {f.pasos} sección{f.pasos > 1 ? 'es' : ''}</span>
-                <span>🎛 {f.formato}</span>
+          <div className="selector-grid">
+            {FORMULARIOS.map((f) => (
+              <button key={f.id} className="form-card" onClick={() => onSelect(f)}>
+                <div className="form-card-icon">{f.icono}</div>
+                <h3>{f.nombre}</h3>
+                <p>{f.descripcion}</p>
+                <div className="form-card-meta">
+                  <span>📋 {f.pasos} sección{f.pasos > 1 ? 'es' : ''}</span>
+                  <span>🎛 {f.formato}</span>
+                </div>
+                <div className="form-card-cta">Comenzar →</div>
+              </button>
+            ))}
+          </div>
+        </main>
+      )}
+
+      {view === 'pendientes' && (() => {
+        const times = drafts.map((d) => new Date(d.createdAt).getTime()).filter((t) => !isNaN(t))
+        const mostRecent = times.length ? new Date(Math.max(...times)) : null
+        const oldest = times.length ? new Date(Math.min(...times)) : null
+        const DAY = 86400000
+        const staleCount = drafts.filter((d) => {
+          const t = new Date(d.createdAt).getTime()
+          return !isNaN(t) && (Date.now() - t) > 7 * DAY
+        }).length
+        return (
+          <main className="card menu-page menu-page-split">
+            <aside className="menu-page-side">
+              <div className="menu-page-side-top">
+                <button type="button" className="menu-back menu-back-inline" onClick={backToSelector} aria-label="Volver">←</button>
+                <h1 className="menu-page-mobile-title">
+                  {view === 'pendientes' && 'Formularios pendientes'}
+                  {view === 'enviados' && 'Formularios enviados'}
+                  {view === 'cancelados' && 'Formularios cancelados'}
+                </h1>
               </div>
-              <div className="form-card-cta">Comenzar →</div>
-            </button>
-          ))}
-        </div>
-      </main>
+              <div className="kpi-grid">
+                <div className="kpi-card">
+                  <span className="kpi-label">Pendientes</span>
+                  <span className="kpi-value">{drafts.length}</span>
+                  <span className="kpi-hint">Total en curso</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Sin actividad &gt; 7 días</span>
+                  <span className="kpi-value">{staleCount}</span>
+                  <span className="kpi-hint">Requieren atención</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Más reciente</span>
+                  <span className="kpi-value-sm">{mostRecent ? formatAbsolute(mostRecent.toISOString()) : '—'}</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Más antiguo</span>
+                  <span className="kpi-value-sm">{oldest ? formatAbsolute(oldest.toISOString()) : '—'}</span>
+                </div>
+              </div>
+            </aside>
+            <section className="menu-page-main">
+              {drafts.length === 0 ? (
+                <div className="menu-empty">No hay formularios pendientes.</div>
+              ) : (
+                <ul className="draft-list">
+                  {drafts.map((d) => (
+                    <li key={d.id}>
+                      <button type="button" className="draft-item" onClick={() => handleResume(d)}>
+                        <div className="draft-item-main">
+                          <span className="draft-item-title">Formulario de contratación</span>
+                          <span className="draft-item-date">{formatAbsolute(d.createdAt)}</span>
+                        </div>
+                        <span className="draft-item-cta">Reanudar →</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="draft-item-cancel"
+                        onClick={(e) => { e.stopPropagation(); requestCancel(d) }}
+                        aria-label="Eliminar borrador"
+                      >×</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </main>
+        )
+      })()}
+
+      {view === 'enviados' && (() => {
+        const times = submittedList.map((d) => new Date(d.submittedAt).getTime()).filter((t) => !isNaN(t))
+        const mostRecent = times.length ? new Date(Math.max(...times)) : null
+        const oldest = times.length ? new Date(Math.min(...times)) : null
+        const DAY = 86400000
+        const last7 = submittedList.filter((d) => {
+          const t = new Date(d.submittedAt).getTime()
+          return !isNaN(t) && (Date.now() - t) <= 7 * DAY
+        }).length
+        return (
+          <main className="card menu-page menu-page-split">
+            <aside className="menu-page-side">
+              <div className="menu-page-side-top">
+                <button type="button" className="menu-back menu-back-inline" onClick={backToSelector} aria-label="Volver">←</button>
+                <h1 className="menu-page-mobile-title">
+                  {view === 'pendientes' && 'Formularios pendientes'}
+                  {view === 'enviados' && 'Formularios enviados'}
+                  {view === 'cancelados' && 'Formularios cancelados'}
+                </h1>
+              </div>
+              <div className="kpi-grid">
+                <div className="kpi-card">
+                  <span className="kpi-label">Enviados</span>
+                  <span className="kpi-value">{submittedList.length}</span>
+                  <span className="kpi-hint">Total histórico</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Últimos 7 días</span>
+                  <span className="kpi-value">{last7}</span>
+                  <span className="kpi-hint">Actividad reciente</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Más reciente</span>
+                  <span className="kpi-value-sm">{mostRecent ? formatAbsolute(mostRecent.toISOString()) : '—'}</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Más antiguo</span>
+                  <span className="kpi-value-sm">{oldest ? formatAbsolute(oldest.toISOString()) : '—'}</span>
+                </div>
+              </div>
+            </aside>
+            <section className="menu-page-main">
+              {submittedList.length === 0 ? (
+                <div className="menu-empty">Aún no hay formularios enviados.</div>
+              ) : (
+                <ul className="draft-list">
+                  {submittedList.map((d) => (
+                    <li key={d.id}>
+                      <button type="button" className="draft-item" onClick={() => handleViewSubmitted(d)}>
+                        <div className="draft-item-main">
+                          <span className="draft-item-title">Formulario de contratación</span>
+                          <span className="draft-item-date">{formatAbsolute(d.submittedAt)}</span>
+                        </div>
+                        <span className="draft-badge ok">Completado</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </main>
+        )
+      })()}
+
+      {view === 'cancelados' && (() => {
+        const times = cancelledList.map((d) => new Date(d.cancelledAt).getTime()).filter((t) => !isNaN(t))
+        const mostRecent = times.length ? new Date(Math.max(...times)) : null
+        const oldest = times.length ? new Date(Math.min(...times)) : null
+        const DAY = 86400000
+        const last7 = cancelledList.filter((d) => {
+          const t = new Date(d.cancelledAt).getTime()
+          return !isNaN(t) && (Date.now() - t) <= 7 * DAY
+        }).length
+        return (
+          <main className="card menu-page menu-page-split">
+            <aside className="menu-page-side">
+              <div className="menu-page-side-top">
+                <button type="button" className="menu-back menu-back-inline" onClick={backToSelector} aria-label="Volver">←</button>
+                <h1 className="menu-page-mobile-title">
+                  {view === 'pendientes' && 'Formularios pendientes'}
+                  {view === 'enviados' && 'Formularios enviados'}
+                  {view === 'cancelados' && 'Formularios cancelados'}
+                </h1>
+              </div>
+              <div className="kpi-grid">
+                <div className="kpi-card">
+                  <span className="kpi-label">Cancelados</span>
+                  <span className="kpi-value">{cancelledList.length}</span>
+                  <span className="kpi-hint">Total anulados</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Últimos 7 días</span>
+                  <span className="kpi-value">{last7}</span>
+                  <span className="kpi-hint">Anulaciones recientes</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Más reciente</span>
+                  <span className="kpi-value-sm">{mostRecent ? formatAbsolute(mostRecent.toISOString()) : '—'}</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Más antiguo</span>
+                  <span className="kpi-value-sm">{oldest ? formatAbsolute(oldest.toISOString()) : '—'}</span>
+                </div>
+              </div>
+            </aside>
+            <section className="menu-page-main">
+              {cancelledList.length === 0 ? (
+                <div className="menu-empty">No hay formularios cancelados.</div>
+              ) : (
+                <ul className="draft-list">
+                  {cancelledList.map((d) => (
+                    <li key={d.id}>
+                      <div className="draft-item as-readonly">
+                        <div className="draft-item-main">
+                          <span className="draft-item-title">Formulario de contratación</span>
+                          <span className="draft-item-date">{formatAbsolute(d.cancelledAt)}</span>
+                        </div>
+                        <span className="draft-badge cancelled">Anulado</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </main>
+        )
+      })()}
 
       {confirmCancel && (
         <div className="modal-backdrop confirm-layer" onClick={() => setConfirmCancel(null)}>
